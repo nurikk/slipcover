@@ -17,6 +17,7 @@ import shutil
 # Used for fork() support
 input_tmpfiles = []
 output_tmpfile = None
+_merged_coverage_cache = None
 
 
 def fork_shim(sci):
@@ -46,7 +47,10 @@ def fork_shim(sci):
 
 def merged_coverage(sci):
     """Combines this process' coverage with that of any previously forked children and xdist workers."""
-    global input_tmpfiles, output_tmpfile
+    global input_tmpfiles, output_tmpfile, _merged_coverage_cache
+
+    if _merged_coverage_cache is not None:
+        return _merged_coverage_cache
 
     cov = sci.get_coverage()
 
@@ -87,6 +91,7 @@ def merged_coverage(sci):
         except Exception:
             pass
 
+    _merged_coverage_cache = cov
     return cov
 
 
