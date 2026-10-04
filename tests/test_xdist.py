@@ -34,6 +34,29 @@ def check_summaries(cov):
     assert check['summary'] == cov['summary']
 
 
+@pytest.mark.parametrize("threshold", [[], ['--fail-under', '100']])
+def test_xdist_fail_under_preserves_report(tmp_path, threshold):
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "example.py").write_text("def answer(): return 42\n")
+    (tmp_path / "test_example.py").write_text(
+        "import sys\nsys.path.insert(0, 'src')\nfrom example import answer\n"
+        "def test_answer():\n    assert answer() == 42\n"
+    )
+    out = tmp_path / "out.json"
+    result = subprocess.run(
+        [sys.executable, '-m', 'slipcover', '--source', 'src', '--json',
+         '--out', str(out), *threshold, '-m', 'pytest', '-n', '2', '-q',
+         'test_example.py'], cwd=tmp_path, capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    cov = json.loads(out.read_text())
+    check_summaries(cov)
+    assert cov['files']['src/example.py']['executed_lines'] == [1]
+    assert cov['files']['src/example.py']['missing_lines'] == []
+    assert cov['summary']['percent_covered'] == 100
+
+
 def test_xdist_basic(tmp_path):
     """Test basic xdist coverage collection with 2 workers."""
     out = tmp_path / "out.json"
