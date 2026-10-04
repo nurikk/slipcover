@@ -62,7 +62,7 @@ class Box:
         cwd=tmp_path, capture_output=True, text=True
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    cov = json.loads(out.read_text())['files']['src/example.py']
+    cov = json.loads(out.read_text())['files'][str(Path('src') / 'example.py')]
     assert cov['missing_lines'] == []
     assert cov['summary']['percent_covered'] == 100
 
